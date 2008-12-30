@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 package Net::SSLGlue::SMTP;
-use IO::Socket::SSL;
+use IO::Socket::SSL 1.14;
 use Net::SMTP;
 
 ##############################################################################
@@ -102,3 +102,87 @@ our %SSLargs;
 }
 
 1;
+
+=head1 NAME
+
+Net::SSLGlue::SMTP - make Net::SMTP able to use SSL
+
+=head1 SYNOPSIS
+
+  	use Net::SSLGlue::SMTP;
+  	my $smtp_ssl = Net::SMTP->new( $host, 
+  		SSL => 1,
+		SSL_ca_path => ...
+	);
+
+	my $smtp_plain = Net::SMTP->new( $host );
+	$smtp_plain->startssl( SSL_ca_path => ... );
+
+=head1 DESCRIPTION
+
+L<Net::SSLGlue::SMTP> expands L<Net::SMTP> so one can either start directly with SSL
+or switch later to SSL using the STARTTLS command.
+
+By default it will take care to verfify the certificate according to the rules
+for SMTP implemented in L<IO::Socket::SSL>.
+
+=head1 METHODS
+
+=over 4
+
+=item new
+
+The method C<new> of L<Net::SMTP> is now able to start directly with SSL when
+the argument C<<SSL => 1>> is given. In this case it will not create an
+L<IO::Socket::INET> object but an L<IO::Socket::SSL> object. One can give the
+usual C<SSL_*> parameter of L<IO::Socket::SSL> to C<Net::SMTP::new>.
+
+=item startssl
+
+If the connection is not yet SSLified it will issue the STARTTLS command and
+change the object, so that SSL will now be used. The usual C<SSL_*> parameter of
+L<IO::Socket::SSL> will be given.
+
+=item peer_certificate ...
+
+Once the SSL connection is established the object is derived from
+L<IO::Socket::SSL> so that you can use this method to get information about the
+certificate. See the L<IO::Socket::SSL> documentation.
+
+=back
+
+All of these methods can take the C<SSL_*> parameter from L<IO::Socket::SSL> to
+change the behavior of the SSL connection. Especially the following parameter
+are useful:
+
+=over 4
+
+=item SSL_ca_path, SSL_ca_file
+
+Specifies the path or a file where the CAs used for checking the certificates
+are located. Typical for UNIX systems is L</etc/ssl/certs>.
+
+=item SSL_verify_mode
+
+If set to 0 disabled verification of the certificate. By default it is 1 which
+means, that the peer certificate is checked.
+
+=item SSL_verifycn_name
+
+Usually the name given as the hostname in the constructor is used to verify the
+identity of the certificate. If you want to check the certificate against
+another name you might specify it with this parameter.
+
+=back
+
+=head1 SEE ALSO
+
+IO::Socket::SSL, Net::SMTP
+
+=head1 COPYRIGHT
+
+This module is copyright (c) 2008, Steffen Ullrich.
+All Rights Reserved.
+This module is free software. It may be used, redistributed and/or modified
+under the same terms as Perl itself.
+
