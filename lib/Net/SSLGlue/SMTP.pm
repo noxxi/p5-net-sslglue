@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 package Net::SSLGlue::SMTP;
-use IO::Socket::SSL 1.14;
+use IO::Socket::SSL 1.19;
 use Net::SMTP;
 
 ##############################################################################
@@ -40,7 +40,7 @@ my $old_new = \&Net::SMTP::new;
 # Socket class derived from IO::Socket::SSL
 # strict certificate verification per default
 ##############################################################################
-our %SSLargs;
+our %SSLopts;
 {
 	package Net::SMTP::_SSL_Socket;
 	our @ISA = 'IO::Socket::SSL';
@@ -55,8 +55,8 @@ our %SSLargs;
 		$arg_hash->{SSL_verifycn_name} = ${*$self}{net_smtp_host}
 			if ! exists $arg_hash->{SSL_verifycn_name};
 
-		# force keys from %SSLargs
-		while ( my ($k,$v) = each %SSLargs ) {
+		# force keys from %SSLopts
+		while ( my ($k,$v) = each %SSLopts ) {
 			$arg_hash->{$k} = $v;
 		}
 		return $self->SUPER::configure_SSL($arg_hash)
@@ -95,8 +95,8 @@ our %SSLargs;
 	*Net::SMTP::_SSLified::new = sub {
 		my $class = shift;
 		my %arg = @_ % 2 == 0 ? @_ : ( Host => shift,@_ );
-		local %SSLargs;
-		$SSLargs{$_} = delete $arg{$_} for ( grep { /^SSL_/ } keys %arg );
+		local %SSLopts;
+		$SSLopts{$_} = delete $arg{$_} for ( grep { /^SSL_/ } keys %arg );
 		return $old_new->($class,%arg);
 	};
 }
