@@ -1,7 +1,12 @@
 use strict;
 use warnings;
 package Net::SSLGlue::LWP;
+our $VERSION = 0.2;
+use LWP::UserAgent '5.822';
 use IO::Socket::SSL 1.19;
+use URI::Escape 'uri_unescape';
+use MIME::Base64 'encode_base64';
+use URI;
 
 # force IO::Socket::SSL as superclass of Net::HTTPS, because
 # only it can verify certificates
@@ -9,6 +14,7 @@ BEGIN {
 	my $oc = $Net::HTTPS::SOCKET_CLASS;
 	$Net::HTTPS::SOCKET_CLASS = my $need = 'IO::Socket::SSL';
 	require Net::HTTPS;
+	require LWP::Protocol::https;
 	if ( ( my $oc = $Net::HTTPS::SOCKET_CLASS ) ne $need ) {
 		# was probably loaded before, change ISA
 		grep { s{^\Q$oc\E$}{$need} } @Net::HTTPS::ISA
@@ -22,16 +28,92 @@ sub import {
 	shift;
 	%SSLopts = @_;
 }
-my $old_eso = defined &LWP::Protocol::https::_extra_sock_opts;
-no warnings 'redefine';
-*LWP::Protocol::https::_extra_sock_opts = sub {
-	return (
-		$old_eso ? ( $old_eso->(@_) ):(),
-		SSL_verify_mode => 1,
-		SSL_verifycn_scheme => 'http',
-		%SSLopts,
-	);
-};
+
+{
+	# add SSL options
+	my $old_eso = UNIVERSAL::can( 'LWP::Protocol::https','_extra_sock_opts' );
+	no warnings 'redefine';
+	*LWP::Protocol::https::_extra_sock_opts = sub {
+		return (
+			$old_eso ? ( $old_eso->(@_) ):(),
+			SSL_verify_mode => 1,
+			SSL_verifycn_scheme => 'http',
+			HTTPS_proxy => $_[0]->{ua}{https_proxy},
+			%SSLopts,
+		);
+	};
+}
+
+{
+	# fix https_proxy handling - forward it to a variable handled by me
+	my $old_proxy = defined &LWP::UserAgent::proxy && \&LWP::UserAgent::proxy
+		or die "cannot find LWP::UserAgent::proxy";
+	no warnings 'redefine';
+	*LWP::UserAgent::proxy = sub {
+		my ($self,$key,$val) = @_;
+		goto &$old_proxy if ref($key) || $key ne 'https';
+		if (@_>2) {
+			my $rv = &$old_proxy;
+			$self->{https_proxy} = delete $self->{proxy}{https}
+				|| die "https proxy not set?";
+		}
+		return $self->{https_proxy};
+	}
+}
+
+{
+
+	my $old_new = UNIVERSAL::can( 'LWP::Protocol::https::Socket','new' );
+	my $sockclass = 'IO::Socket::INET';
+	$sockclass .= '6' if eval "require IO::Socket::INET6" && ! $@;
+	no warnings 'redefine';
+	*LWP::Protocol::https::Socket::new = sub {
+		my $class = shift;
+		my %args = @_>1 ? @_ : ( PeerAddr => shift );
+		my $phost = delete $args{HTTPS_proxy}
+			|| return $old_new->($class,%args);
+		$phost = URI->new($phost) if ! ref $phost;
+
+		my $port = delete $args{PeerPort};
+		my $host = delete $args{PeerHost} || delete $args{PeerAddr};
+		if ( ! $port ) {
+			$host =~s{:(\w+)$}{};
+			$port = $args{PeerPort} = $1;
+			$args{PeerHost} = $host;
+		}
+		if ( $phost->scheme ne 'http' ) {
+			$@ = "scheme ".$phost->scheme." not supported for https_proxy";
+			return;
+		}
+		my $auth = '';
+		if ( my ($user,$pass) = split( ':', $phost->userinfo || '' ) ) {
+			$auth = "Proxy-authorization: Basic ".
+				encode_base64( uri_unescape($user).':'.uri_unescape($pass),'' ).
+				"\r\n";
+		}
+
+		my $pport = $phost->port;
+		$phost = $phost->host;
+		my $self = $sockclass->new( PeerAddr => $phost, PeerPort => $pport )
+			or return;
+		print $self "CONNECT $host:$port HTTP/1.0\r\n$auth\r\n";
+		my $hdr = '';
+		while (<$self>) {
+			$hdr .= $_;
+			last if $_ eq "\n" or $_ eq "\r\n";
+		}
+		if ( $hdr !~m{\AHTTP/1.\d 2\d\d} ) {
+			# error
+			$@ = "non 2xx response to CONNECT: $hdr";
+			return;
+		} else {
+			$class->start_SSL( $self,
+				SSL_verifycn_name => $host,
+				%args
+			);
+		}
+	};
+}
 
 1;
 
