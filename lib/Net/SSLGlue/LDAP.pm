@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 package Net::DNSGlue::LDAP;
+our $VERSION = 0.2;
 use Net::LDAP;
 use IO::Socket::SSL 1.19;
 
@@ -11,6 +12,7 @@ our %SSLopts;
 # Net::LDAP::_SSL_context_init_args
 
 my $old = defined &Net::LDAP::_SSL_context_init_args
+	&& \&Net::LDAP::_SSL_context_init_args
 	|| die "cannot find Net::LDAP::_SSL_context_init_args";
 no warnings 'redefine';
 *Net::LDAP::_SSL_context_init_args = sub {
