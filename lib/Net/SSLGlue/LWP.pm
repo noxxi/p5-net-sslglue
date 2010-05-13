@@ -1,26 +1,26 @@
 use strict;
 use warnings;
 package Net::SSLGlue::LWP;
-our $VERSION = 0.2;
+our $VERSION = 0.3;
 use LWP::UserAgent '5.822';
 use IO::Socket::SSL 1.19;
 use URI::Escape 'uri_unescape';
 use MIME::Base64 'encode_base64';
 use URI;
 
-# force IO::Socket::SSL as superclass of Net::HTTPS, because
+# force Net::SSLGlue::LWP::Socket as superclass of Net::HTTPS, because
 # only it can verify certificates
 BEGIN {
-	my $oc = $Net::HTTPS::SOCKET_CLASS;
-	$Net::HTTPS::SOCKET_CLASS = my $need = 'IO::Socket::SSL';
+	my $oc = $Net::HTTPS::SSL_SOCKET_CLASS;
+	$Net::HTTPS::SSL_SOCKET_CLASS = my $need = 'Net::SSLGlue::LWP::Socket';
 	require Net::HTTPS;
 	require LWP::Protocol::https;
-	if ( ( my $oc = $Net::HTTPS::SOCKET_CLASS ) ne $need ) {
+	if ( ( my $oc = $Net::HTTPS::SSL_SOCKET_CLASS ) ne $need ) {
 		# was probably loaded before, change ISA
 		grep { s{^\Q$oc\E$}{$need} } @Net::HTTPS::ISA
 	}
-	die "cannot force IO::Socket:SSL into Net::HTTPS"
-		if $Net::HTTPS::SOCKET_CLASS ne $need;
+	die "cannot force $need into Net::HTTPS"
+		if $Net::HTTPS::SSL_SOCKET_CLASS ne $need;
 }
 
 our %SSLopts;  # set by local and import
@@ -63,23 +63,24 @@ sub import {
 
 {
 
-	my $old_new = UNIVERSAL::can( 'LWP::Protocol::https::Socket','new' );
+	package Net::SSLGlue::LWP::Socket;
+	use IO::Socket::SSL;
+	use base 'IO::Socket::SSL';
 	my $sockclass = 'IO::Socket::INET';
-	$sockclass .= '6' if eval "require IO::Socket::INET6" && ! $@;
-	no warnings 'redefine';
-	*LWP::Protocol::https::Socket::new = sub {
-		my $class = shift;
-		my %args = @_>1 ? @_ : ( PeerAddr => shift );
-		my $phost = delete $args{HTTPS_proxy}
-			|| return $old_new->($class,%args);
+	$sockclass .= '6' if eval "require IO::Socket::INET6";
+
+	sub configure {
+		my ($self,$args) = @_;
+		my $phost = delete $args->{HTTPS_proxy}
+			or return $self->SUPER::configure($args);
 		$phost = URI->new($phost) if ! ref $phost;
 
-		my $port = delete $args{PeerPort};
-		my $host = delete $args{PeerHost} || delete $args{PeerAddr};
+		my $port = $args->{PeerPort};
+		my $host = $args->{PeerHost} || $args->{PeerAddr};
 		if ( ! $port ) {
 			$host =~s{:(\w+)$}{};
-			$port = $args{PeerPort} = $1;
-			$args{PeerHost} = $host;
+			$port = $args->{PeerPort} = $1;
+			$args->{PeerHost} = $host;
 		}
 		if ( $phost->scheme ne 'http' ) {
 			$@ = "scheme ".$phost->scheme." not supported for https_proxy";
@@ -94,8 +95,16 @@ sub import {
 
 		my $pport = $phost->port;
 		$phost = $phost->host;
-		my $self = $sockclass->new( PeerAddr => $phost, PeerPort => $pport )
-			or return;
+
+		# temporally downgrade $self so that the right connect chain
+		# gets called w/o doing SSL stuff. If we don't do it it will
+		# try to call IO::Socket::SSL::connect
+		my $ssl_class = ref($self);
+		bless $self,$sockclass;
+		$self->configure({ %$args, PeerAddr => $phost, PeerPort => $pport }) or do {
+			$@ = "connect to proxy $phost port $pport failed";
+			return;
+		};
 		print $self "CONNECT $host:$port HTTP/1.0\r\n$auth\r\n";
 		my $hdr = '';
 		while (<$self>) {
@@ -106,12 +115,17 @@ sub import {
 			# error
 			$@ = "non 2xx response to CONNECT: $hdr";
 			return;
-		} else {
-			$class->start_SSL( $self,
-				SSL_verifycn_name => $host,
-				%args
-			);
 		}
+
+		# and upgrade self by calling start_SSL
+		$ssl_class->start_SSL( $self,
+			SSL_verifycn_name => $host,
+			%$args
+		) or do {
+			$@ = "start SSL failed: $SSL_ERROR";
+			return;
+		};
+		return $self;
 	};
 }
 
@@ -129,7 +143,17 @@ Net::SSLGlue::LWP - proper certificate checking for https in LWP
 
 	{
 		local %Net::SSLGlue::LWP::SSLopts = %Net::SSLGlue::LWP::SSLopts;
-		$Net::SSLGlue::LWP::SSLopts{SSL_verify_mode} = 0; # no verification
+
+		# switch off verification
+		$Net::SSLGlue::LWP::SSLopts{SSL_verify_mode} = 0; 
+
+		# or: set different verification policy, because cert does
+		# not conform to RFC (wildcards in CN are not allowed for https,
+		# but some servers do it anyway)
+		$Net::SSLGlue::LWP::SSLopts{SSL_verifycn_scheme} = {
+			wildcards_in_cn => 'anywhere',
+			check_cn => 'always',
+		};
 	}
 
 
