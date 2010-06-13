@@ -9,3 +9,8 @@ t/external/02_smtp.t
 t/external/03_lwp.t
 TODO
 COPYRIGHT
+examples/lwp.pl
+examples/lwp_post.pl
+examples/send-ssl-mail.pl
+examples/send-starttls-mail.pl
+Changes
