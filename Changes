@@ -1,0 +1,22 @@
+0.4 2010/06/13
+added Changes, put examples into examples/ dir
+
+0.3 2010/05/13
+rewrite parts of Net::SSLGlue::LWP so that it sends the correct request
+to the peer even if https_proxy is used. In former version it ommitted
+the HTTP version number in the request (thus the request was invalid).
+Bug report by PMOONEY https://rt.cpan.org/Ticket/Display.html?id=57365
+
+0.2_1 2010/05/11
+document way to set different verification scheme for LWP
+requested by PMOONEY https://rt.cpan.org/Ticket/Display.html?57367
+
+0.2 2009/01/02
+https_proxy support for LWP, HTTPS_PROXY from Crypt::SSLeay did not work and
+the https_proxy from LWP was broken with both Crypt::SSLeay and
+IO::Socket::SSL (it did unencrypted https:// requests to the proxy).
+Fix it so that it now does CONNECT (this is the meaning of https_proxy for
+all other programs)
+
+0.1 2008/12/31 
+initial release
