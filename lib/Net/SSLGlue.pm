@@ -1,5 +1,5 @@
 package Net::SSLGlue;
-$VERSION = 0.4;
+our $VERSION = 0.5;
 
 =head1 NAME
 
@@ -27,7 +27,7 @@ these modules. Currently is support for the following modules available:
 =head1 COPYRIGHT
 
 This module and the modules in the Net::SSLGlue Hierarchy distributed together
-with this module are copyright (c) 2008, Steffen Ullrich.
+with this module are copyright (c) 2008-2011, Steffen Ullrich.
 All Rights Reserved.
 These modules are free software. They may be used, redistributed and/or modified
 under the same terms as Perl itself.
