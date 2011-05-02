@@ -4,6 +4,7 @@ use warnings;
 package Net::SSLGlue::SMTP;
 use IO::Socket::SSL 1.19;
 use Net::SMTP;
+our $VERSION = 0.5;
 
 ##############################################################################
 # mix starttls method into Net::SMTP which on SSL handshake success 
@@ -116,7 +117,7 @@ Net::SSLGlue::SMTP - make Net::SMTP able to use SSL
 	);
 
 	my $smtp_plain = Net::SMTP->new( $host );
-	$smtp_plain->startssl( SSL_ca_path => ... );
+	$smtp_plain->starttls( SSL_ca_path => ... );
 
 =head1 DESCRIPTION
 
@@ -137,7 +138,7 @@ the argument C<<SSL => 1>> is given. In this case it will not create an
 L<IO::Socket::INET> object but an L<IO::Socket::SSL> object. One can give the
 usual C<SSL_*> parameter of L<IO::Socket::SSL> to C<Net::SMTP::new>.
 
-=item startssl
+=item starttls
 
 If the connection is not yet SSLified it will issue the STARTTLS command and
 change the object, so that SSL will now be used. The usual C<SSL_*> parameter of
