@@ -1,3 +1,6 @@
+0.5 2011/05/02
+fixed english, thanks to dom, https://rt.cpan.org/Ticket/Display.html?id=46284
+
 0.4 2010/06/13
 added Changes, put examples into examples/ dir
 

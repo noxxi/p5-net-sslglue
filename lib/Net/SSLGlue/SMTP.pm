@@ -120,10 +120,10 @@ Net::SSLGlue::SMTP - make Net::SMTP able to use SSL
 
 =head1 DESCRIPTION
 
-L<Net::SSLGlue::SMTP> expands L<Net::SMTP> so one can either start directly with SSL
+L<Net::SSLGlue::SMTP> extends L<Net::SMTP> so one can either start directly with SSL
 or switch later to SSL using the STARTTLS command.
 
-By default it will take care to verfify the certificate according to the rules
+By default it will take care to verify the certificate according to the rules
 for SMTP implemented in L<IO::Socket::SSL>.
 
 =head1 METHODS
@@ -152,26 +152,26 @@ certificate. See the L<IO::Socket::SSL> documentation.
 =back
 
 All of these methods can take the C<SSL_*> parameter from L<IO::Socket::SSL> to
-change the behavior of the SSL connection. Especially the following parameter
-are useful:
+change the behavior of the SSL connection. The following parameters are
+especially useful:
 
 =over 4
 
 =item SSL_ca_path, SSL_ca_file
 
 Specifies the path or a file where the CAs used for checking the certificates
-are located. Typical for UNIX systems is L</etc/ssl/certs>.
+are located. This is typically L</etc/ssl/certs> on UNIX systems.
 
 =item SSL_verify_mode
 
-If set to 0 disabled verification of the certificate. By default it is 1 which
-means, that the peer certificate is checked.
+If set to 0, verification of the certificate will be disabled. By default
+it is set to 1 which means that the peer certificate is checked.
 
 =item SSL_verifycn_name
 
 Usually the name given as the hostname in the constructor is used to verify the
 identity of the certificate. If you want to check the certificate against
-another name you might specify it with this parameter.
+another name you can specify it with this parameter.
 
 =back
 

@@ -43,13 +43,13 @@ Net::SSLGlue::LDAP - proper certificate checking for ldaps in Net::LDAP
 L<Net::SSLGlue::LDAP> modifies L<Net::LDAP> so that it does proper certificate
 checking using the C<ldap> SSL_verify_scheme from L<IO::Socket::SSL>.
 
-Because L<Net::LDAP> does not have a mechanism to forward arbitrary parameter for
+Because L<Net::LDAP> does not have a mechanism to forward arbitrary parameters for
 the construction of the underlying socket these parameters can be set globally
-when including the package or with local settings of the
+when including the package, or with local settings of the
 C<%Net::SSLGlue::LDAP::SSLopts> variable.
 
-All of the C<SSL_*> parameter from L<IO::Socket::SSL> can be used, especially
-the following parameter is useful:
+All of the C<SSL_*> parameters from L<IO::Socket::SSL> can be used; the
+following parameter is especially useful:
 
 =over 4
 
@@ -57,7 +57,7 @@ the following parameter is useful:
 
 Usually the name given as the hostname in the constructor is used to verify the
 identity of the certificate. If you want to check the certificate against
-another name you might specify it with this parameter.
+another name you can specify it with this parameter.
 
 =back
 
