@@ -4,7 +4,7 @@ use warnings;
 package Net::SSLGlue::SMTP;
 use IO::Socket::SSL 1.19;
 use Net::SMTP;
-our $VERSION = 0.5;
+our $VERSION = 0.7;
 
 ##############################################################################
 # mix starttls method into Net::SMTP which on SSL handshake success 
@@ -13,10 +13,14 @@ our $VERSION = 0.5;
 sub Net::SMTP::starttls {
 	my $self = shift;
 	$self->_STARTTLS or return;
+	my $host = ${*$self}{net_smtp_host};
+	# for name verification strip port from domain:port, ipv4:port, [ipv6]:port
+	$host =~s{^(?:[^:]+|.+\])\:(\d+)$}{}; 
+
 	Net::SMTP::_SSLified->start_SSL( $self,
 		SSL_verify_mode => 1,
 		SSL_verifycn_scheme => 'smtp',
-		SSL_verifycn_name => ${*$self}{net_smtp_host},
+		SSL_verifycn_name => $host,
 		@_ 
 	);
 }

@@ -1,3 +1,6 @@
+0.7 2011/05/27
+strip port from host/ip for name verification in Net::SSLGlue::SMTP
+
 0.6 2011/05/02
 fixed english, thanks to dom, https://rt.cpan.org/Ticket/Display.html?id=46284
 
