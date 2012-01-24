@@ -1,11 +1,9 @@
 use strict;
 use warnings;
 package Net::SSLGlue::LWP;
-our $VERSION = 0.3;
+our $VERSION = 0.4;
 use LWP::UserAgent '5.822';
 use IO::Socket::SSL 1.19;
-use URI::Escape 'uri_unescape';
-use MIME::Base64 'encode_base64';
 use URI;
 
 # force Net::SSLGlue::LWP::Socket as superclass of Net::HTTPS, because
@@ -67,6 +65,8 @@ sub import {
 	use IO::Socket::SSL;
 	use base 'IO::Socket::SSL';
 	my $sockclass = 'IO::Socket::INET';
+	use URI::Escape 'uri_unescape';
+	use MIME::Base64 'encode_base64';
 	$sockclass .= '6' if eval "require IO::Socket::INET6";
 
 	sub configure {
