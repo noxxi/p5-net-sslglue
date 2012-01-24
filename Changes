@@ -1,3 +1,9 @@
+0.8 2012/01/24
+Net::SSLGlue::SMTP: fixed stripping of port from host/ip for name 
+verification. Added hello after successful starttls. Extented tests
+to check, if we can actually talk after starttls.
+Thanks to zaucker[AT]oetiker[DOT]ch for reporting problem.
+
 0.7 2011/05/27
 strip port from host/ip for name verification in Net::SSLGlue::SMTP
 

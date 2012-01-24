@@ -13,16 +13,19 @@ our $VERSION = 0.7;
 sub Net::SMTP::starttls {
 	my $self = shift;
 	$self->_STARTTLS or return;
-	my $host = ${*$self}{net_smtp_host};
+	my $host = $self->host;
 	# for name verification strip port from domain:port, ipv4:port, [ipv6]:port
-	$host =~s{^(?:[^:]+|.+\])\:(\d+)$}{}; 
+	$host =~s{(?<!:):\d+$}{};
 
 	Net::SMTP::_SSLified->start_SSL( $self,
 		SSL_verify_mode => 1,
 		SSL_verifycn_scheme => 'smtp',
 		SSL_verifycn_name => $host,
 		@_ 
-	);
+	) or return;
+
+	# another hello after starttls to read new ESMTP capabilities
+	return $self->hello;
 }
 sub Net::SMTP::_STARTTLS { 
 	shift->command("STARTTLS")->response() == Net::SMTP::CMD_OK
@@ -57,7 +60,7 @@ our %SSLopts;
 			if ! exists $arg_hash->{SSL_verify_mode};
 		$arg_hash->{SSL_verifycn_scheme} = 'smtp'
 			if ! exists $arg_hash->{SSL_verifycn_scheme};
-		$arg_hash->{SSL_verifycn_name} = ${*$self}{net_smtp_host}
+		$arg_hash->{SSL_verifycn_name} = $self->host
 			if ! exists $arg_hash->{SSL_verifycn_name};
 
 		# force keys from %SSLopts

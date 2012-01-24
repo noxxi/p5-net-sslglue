@@ -33,7 +33,7 @@ IO::Socket::SSL->new(
 	SSL_ca_path => $capath,
 	SSL_verify_mode => 1,
 	SSL_verifycn_scheme => 'smtp' 
-	) or do {
+) or do {
 	print "1..0 # mail.gmx.net:465 not reachable with SSL\n";
 	exit
 };
@@ -46,12 +46,12 @@ IO::Socket::SSL->new(
 	SSL_ca_path => $capath,
 	SSL_verify_mode => 1,
 	SSL_verifycn_scheme => 'smtp' 
-	) and do {
+) and do {
 	print "1..0 # mail.gmx.de:465 reachable with SSL\n";
 	exit
 };
 
-print "1..5\n";
+print "1..6\n";
 
 # first direct SSL
 my $smtp = Net::SMTP->new( 'mail.gmx.net', 
@@ -64,6 +64,8 @@ print $smtp ? "ok\n" : "not ok # smtp connect mail.gmx.net\n";
 $smtp = Net::SMTP->new( 'mail.gmx.net' );
 my $ok = $smtp->starttls( SSL_ca_path => $capath );
 print $ok ? "ok\n" : "not ok # smtp starttls mail.gmx.net\n";
+# check that we can talk on connection
+print $smtp->quit ? "ok\n": "not ok # quit failed\n";
 
 # against wrong host should fail
 $smtp = Net::SMTP->new( 'mail.gmx.de' ); # should succeed
