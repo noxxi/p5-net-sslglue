@@ -4,7 +4,7 @@ use warnings;
 package Net::SSLGlue::SMTP;
 use IO::Socket::SSL 1.19;
 use Net::SMTP;
-our $VERSION = 0.7;
+our $VERSION = 0.10;
 
 ##############################################################################
 # mix starttls method into Net::SMTP which on SSL handshake success 
@@ -25,7 +25,7 @@ sub Net::SMTP::starttls {
 	) or return;
 
 	# another hello after starttls to read new ESMTP capabilities
-	return $self->hello;
+	return $self->hello(${*$self}{net_smtp_hello_domain});
 }
 sub Net::SMTP::_STARTTLS { 
 	shift->command("STARTTLS")->response() == Net::SMTP::CMD_OK
@@ -42,6 +42,13 @@ my $old_new = \&Net::SMTP::new;
 	} else {
 		return $old_new->($class,%arg);
 	}
+};
+
+my $old_hello = \&Net::SMTP::hello;
+*Net::SMTP::hello = sub {
+	my ($self,$domain) = @_;
+	${*$self}{net_smtp_hello_domain} = $domain if $domain;
+	goto &$old_hello;
 };
 
 ##############################################################################

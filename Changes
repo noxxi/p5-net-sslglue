@@ -1,3 +1,8 @@
+0.10 2012/01/30
+Net::SSLGlue::SMTP: save hello domain from last hello call, so that the 
+hello after the starttls uses the same domain argument.
+Thanks to zaucker[AT]oetiker[DOT]ch for reporting problem.
+
 0.9 2012/01/24
 Net::SSLGlue::SMTP: fixed stripping of port from host/ip for name 
 verification. Added hello after successful starttls. Extented tests
