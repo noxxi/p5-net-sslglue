@@ -4,7 +4,7 @@ use warnings;
 package Net::SSLGlue::SMTP;
 use IO::Socket::SSL 1.19;
 use Net::SMTP;
-our $VERSION = 0.10;
+our $VERSION = 1.0;
 
 ##############################################################################
 # mix starttls method into Net::SMTP which on SSL handshake success 
