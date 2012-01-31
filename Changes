@@ -1,4 +1,7 @@
-0.10 2012/01/30
+1.01 2012/01/31
+Net::SSLGlue::LDAP as wrongly named Net::DNSGlue::LDAP
+
+1.0 2012/01/30
 Net::SSLGlue::SMTP: save hello domain from last hello call, so that the 
 hello after the starttls uses the same domain argument.
 Thanks to zaucker[AT]oetiker[DOT]ch for reporting problem.

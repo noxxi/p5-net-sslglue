@@ -1,7 +1,7 @@
 use strict;
 use warnings;
-package Net::DNSGlue::LDAP;
-our $VERSION = 0.2;
+package Net::SSLGlue::LDAP;
+our $VERSION = '1.01';
 use Net::LDAP;
 use IO::Socket::SSL 1.19;
 
