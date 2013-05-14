@@ -1,5 +1,5 @@
 package Net::SSLGlue;
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 =head1 NAME
 
@@ -19,6 +19,8 @@ available:
 
 =item Net::SMTP - add SSL from beginning or using STARTTLS
 
+=item Net::POP3 - add SSL from beginning or using STLS
+
 =item Net::LDAP - add proper certificate checking
 
 =item LWP - add proper certificate checking
@@ -28,7 +30,7 @@ available:
 =head1 COPYRIGHT
 
 This module and the modules in the Net::SSLGlue Hierarchy distributed together
-with this module are copyright (c) 2008-2011, Steffen Ullrich.
+with this module are copyright (c) 2008-2013, Steffen Ullrich.
 All Rights Reserved.
 These modules are free software. They may be used, redistributed and/or modified
 under the same terms as Perl itself.

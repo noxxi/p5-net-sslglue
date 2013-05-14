@@ -1,3 +1,6 @@
+1.01 2013/05/14
+added Net::SSLGlue::POP3
+
 1.01 2012/01/31
 Net::SSLGlue::LDAP as wrongly named Net::DNSGlue::LDAP
 
