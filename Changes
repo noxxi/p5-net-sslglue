@@ -1,4 +1,7 @@
-1.01 2013/05/14
+1.02 2013/05/15
+fixed documentation for Net::SSLGlue::POP3
+
+1.02 2013/05/14
 added Net::SSLGlue::POP3
 
 1.01 2012/01/31

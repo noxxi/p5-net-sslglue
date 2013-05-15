@@ -4,7 +4,7 @@ use warnings;
 package Net::SSLGlue::POP3;
 use IO::Socket::SSL 1.19;
 use Net::POP3;
-our $VERSION = 0.9;
+our $VERSION = 0.91;
 
 ##############################################################################
 # mix starttls method into Net::POP3 which on SSL handshake success 
@@ -116,13 +116,13 @@ Net::SSLGlue::POP3 - make Net::POP3 able to use SSL
 =head1 SYNOPSIS
 
   	use Net::SSLGlue::POP3;
-  	my $smtp_ssl = Net::POP3->new( $host, 
+  	my $pop3s = Net::POP3->new( $host, 
   		SSL => 1,
 		SSL_ca_path => ...
 	);
 
-	my $smtp_plain = Net::POP3->new( $host );
-	$smtp_plain->starttls( SSL_ca_path => ... );
+	my $pop3 = Net::POP3->new( $host );
+	$pop3->starttls( SSL_ca_path => ... );
 
 =head1 DESCRIPTION
 
