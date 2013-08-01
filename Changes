@@ -1,4 +1,11 @@
-1.02 2013/05/15
+1.04 2013/08/01
+replace Net::Cmd::getline via Net::SSLGlue::POP3 because it assumed, that it
+just needs to wait for read events on the sockets - which is not the case for
+SSL (e.g. SSL_WANT_READ, SSL_WANT_WRITE).
+Fixes https://rt.cpan.org/Ticket/Display.html?id=87507.
+Thanks to MICHIELB for reporting
+
+1.03 2013/05/15
 fixed documentation for Net::SSLGlue::POP3
 
 1.02 2013/05/14

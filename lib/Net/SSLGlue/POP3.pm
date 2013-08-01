@@ -105,6 +105,14 @@ our %SSLopts;
 		$SSLopts{$_} = delete $arg{$_} for ( grep { /^SSL_/ } keys %arg );
 		return $old_new->($class,%arg);
 	};
+
+	# Net::Cmd getline uses select, but this is not sufficient with SSL
+	# note that this does no EBCDIC etc conversions
+	*Net::POP3::_SSLified::getline = sub {
+		my $self = shift;
+		# skip Net::POP3 getline and go directly to IO::Socket::SSL
+		return $self->IO::Socket::SSL::getline(@_);
+	};
 }
 
 1;
