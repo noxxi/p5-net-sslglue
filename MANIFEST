@@ -19,6 +19,5 @@ README
 t/01_load.t
 t/external/02_smtp.t
 t/external/03_lwp.t
-t/external/04_ftp.t
 t/external/04_pop3.t
 t/external/05_ftp.t
