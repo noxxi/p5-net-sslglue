@@ -38,20 +38,8 @@ IO::Socket::SSL->new(
 	exit
 };
 
-# ssl to the wrong host 
-# the certificate pop.gmx.de returns is for pop.gmx.net
-diag( "connect ssl to pop.gmx.de:995" );
-IO::Socket::SSL->new( 
-	PeerAddr => 'pop.gmx.de:995',
-	SSL_ca_path => $capath,
-	SSL_verify_mode => 1,
-	SSL_verifycn_scheme => 'smtp' 
-) and do {
-	print "1..0 # pop.gmx.de:995 reachable with SSL\n";
-	exit
-};
 
-print "1..6\n";
+print "1..3\n";
 
 # first direct SSL
 my $smtp = Net::POP3->new( 'pop.gmx.net', 
@@ -66,21 +54,6 @@ my $ok = $smtp->starttls( SSL_ca_path => $capath );
 print $ok ? "ok\n" : "not ok # smtp starttls pop.gmx.net\n";
 # check that we can talk on connection
 print $smtp->quit ? "ok\n": "not ok # quit failed\n";
-
-# against wrong host should fail
-$smtp = Net::POP3->new( 'pop.gmx.de' ); # should succeed
-$ok = $smtp->starttls( SSL_ca_path => $capath ); 
-print $ok ? "not ok # smtp starttls pop.gmx.de did not fail\n": "ok\n";
-
-# but not if we specify the right SSL_verifycn_name
-$smtp = Net::POP3->new( 'pop.gmx.de' ); # should succeed
-$ok = $smtp->starttls( SSL_ca_path => $capath, SSL_verifycn_name => 'pop.gmx.net' ); 
-print $ok ? "ok\n" : "not ok # smtp starttls pop.gmx.de/net\n";
-
-# or disable verification
-$smtp = Net::POP3->new( 'pop.gmx.de' ); # should succeed
-$ok = $smtp->starttls( SSL_verify_mode => 0 );
-print $ok ? "ok\n" : "not ok # smtp starttls pop.gmx.de\n";
 
 sub diag { 
 	#print STDERR "@_\n" 

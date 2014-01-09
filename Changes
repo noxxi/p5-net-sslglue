@@ -1,3 +1,9 @@
+1.05 2014/01/09
+- added support for SSL+IPv6 in Net::FTP
+- new package Net::SSLGlue::Socket for a socket which combines plain,ssl,ipv6
+- fixed some tests - some checks for bad certificates do not work anymore
+  because these certs were fixed
+
 1.04 2013/08/01
 replace Net::Cmd::getline via Net::SSLGlue::POP3 because it assumed, that it
 just needs to wait for read events on the sockets - which is not the case for
