@@ -11,4 +11,9 @@ WriteMakefile(
 		'IO::Socket::SSL' => 1.19,
 	},
 	$xt =~m{^y}i ? ( test => { TESTS => 't/*.t t/external/*.t' }):(),
+	META_MERGE => {
+		resources => {
+			repository => 'https://github.com/noxxi/p5-net-sslglue',
+		},
+	},
 );
