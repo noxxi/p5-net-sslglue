@@ -73,7 +73,7 @@ sub Net::FTP::starttls {
 	@_
     );
 
-    $self->start_SSL(%args ) or return;
+    $self->start_SSL(%args) or return;
     ${*$self}{net_ftp_tlsargs} = \%args;
     $self->prot('P');
     return 1;
@@ -203,7 +203,7 @@ for my $cmd (qw(PBSZ PROT CCC EPRT EPSV)) {
 	}
 
 	if (( ${*$self}{net_ftp_tlstype} || '') eq 'P'
-	    && ! $conn->start_SSL(${*$self}{net_ftp_tlsargs}) ) {
+	    && ! $conn->start_SSL(%{${*$self}{net_ftp_tlsargs}}) ) {
 	    croak("failed to ssl upgrade dataconn: $SSL_ERROR");
 	    return;
 	}

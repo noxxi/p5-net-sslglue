@@ -1,6 +1,6 @@
 
 package Net::SSLGlue::Socket;
-our $VERSION = 1.0;
+our $VERSION = 1.001;
 
 use strict;
 use warnings;
@@ -35,17 +35,17 @@ sub new {
 	or return;
 
     my $self = gensym();
+    *$self = *$sock;  # clone handle
     bless $self,$class;
     ${*$self}{sock}    = $sock;
     ${*$self}{ssl}     = $ssl;
     ${*$self}{sslargs} = \%sslargs;
 
-    tie *{$self},'Net::SSLGlue::Socket::HANDLE',$self;
     return $self;
 }
 
 for my $sub (qw(
-    fileno sysread syswrite close connect accept fcntl
+    fileno sysread syswrite close connect fcntl
     read write readline print printf getc say eof getline getlines
     blocking autoflush timeout
     sockhost sockport peerhost peerport sockdomain
@@ -57,9 +57,28 @@ for my $sub (qw(
 	my $sock = ${*$self}{sock} or return;
 	my $sock_sub = $sock->can($sub) or croak("$sock does not support $sub");
 	unshift @_,$sock;
+	# warn "*** $sub called";
 	goto &$sock_sub;
     };
 }
+
+sub accept {
+    my ($self,$class) = @_;
+    my $sock = ${*$self}{sock} or return;
+    my $conn = $sock->accept();
+
+    return bless $conn,$class 
+	if $class && ! $class->isa('Net::SSLGlue::Socket');
+
+    $class ||= ref($self);
+    my $wrap = gensym;
+    *$wrap = *$conn;   # clone original handle
+    bless $wrap, $class;
+    ${*$wrap}{sock}    = $conn;
+    ${*$wrap}{ssl}     = ${*$self}{ssl};
+    ${*$wrap}{sslargs} = ${*$self}{sslargs};
+    return $wrap;
+};
 
 sub start_SSL {
     my $self = shift;
@@ -93,36 +112,6 @@ sub peer_certificate {
 sub is_ssl {
     my $self = shift;
     return ${*$self}{ssl} && ${*$self}{sock};
-}
-
-
-package Net::SSLGlue::Socket::HANDLE;
-use Scalar::Util 'weaken';
-use Errno 'EBADF';
-
-sub TIEHANDLE {
-    my ($class, $handle) = @_;
-    weaken($handle);
-    return bless \$handle, $class;
-}
-
-sub TELL     { $! = EBADF; return -1 }
-sub BINMODE  { return 0 }
-
-for (
-    [ READ => 'sysread' ],
-    [ WRITE => 'syswrite' ],
-    qw(fileno close getc readline print printf)
-) {
-    my ($name,$sub) = ref($_) ? @$_ : (uc($_),$_);
-    no strict 'refs';
-    *$name = sub {
-	my $self = ${shift()};
-	my $sock = ${*$self}{sock} or return;
-	my $sock_sub = $sock->can($sub) or croak("$sock does not support $sub");
-	unshift @_,$sock;
-	goto &$sock_sub;
-    };
 }
 
 1;

@@ -2,6 +2,7 @@ Changes
 COPYRIGHT
 examples/ftps-direct.pl
 examples/ftps-starttls.pl
+examples/ftps-tests.pl
 examples/lwp.pl
 examples/lwp_post.pl
 examples/send-ssl-mail.pl

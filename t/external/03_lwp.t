@@ -23,7 +23,11 @@ my $capath = '/etc/ssl/certs/'; # unix?
     print "1..0 # cannot find system CA-path\n";
     exit
 };
-Net::SSLGlue::LWP->import( SSL_ca_path => $capath );
+Net::SSLGlue::LWP->import( 
+    SSL_ca_path => $capath, 
+    # LWP might define SSL_ca_file - remove it to avoid conflict
+    SSL_ca_file => undef 
+);
 
 #
 # first check everything directly with IO::Socket::SSL
