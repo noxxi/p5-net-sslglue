@@ -8,7 +8,7 @@ use IO::Socket::SSL '$SSL_ERROR';
 use Net::SSLGlue::Socket;
 use Socket 'AF_INET';
 
-our $VERSION = 1.0;
+our $VERSION = 1.001;
 
 BEGIN {
     for my $class (qw(Net::FTP Net::FTP::dataconn)) {
@@ -69,6 +69,8 @@ sub Net::FTP::starttls {
 	SSL_verify_mode => 1,
 	SSL_verifycn_scheme => 'ftp',
 	SSL_verifycn_name => $host,
+	# reuse SSL session of control connection in data connections
+	SSL_session_cache => Net::SSLGlue::FTP::SingleSessionCache->new,
 	%{ ${*$self}{net_ftp_tlsargs}},
 	@_
     );
@@ -203,7 +205,10 @@ for my $cmd (qw(PBSZ PROT CCC EPRT EPSV)) {
 	}
 
 	if (( ${*$self}{net_ftp_tlstype} || '') eq 'P'
-	    && ! $conn->start_SSL(%{${*$self}{net_ftp_tlsargs}}) ) {
+	    && ! $conn->start_SSL( $self->is_ssl 
+		? ( SSL_reuse_ctx => $self )
+		: ( %{${*$self}{net_ftp_tlsargs}} )
+	    ) ) {
 	    croak("failed to ssl upgrade dataconn: $SSL_ERROR");
 	    return;
 	}
@@ -215,6 +220,26 @@ for my $cmd (qw(PBSZ PROT CCC EPRT EPSV)) {
 	${*$conn}{net_ftp_blksize} = ${*$self}{net_ftp_blksize};
 	return $conn;
     };
+}
+
+{
+    # Session Cache with single entry
+    # used to make sure that we reuse same session for control channel and data
+    package Net::SSLGlue::FTP::SingleSessionCache;
+    sub new { my $x; return bless \$x,shift }
+    sub add_session {
+	my ($self,$key,$session) = @_;
+	Net::SSLeay::SESSION_free($$self) if $$self;
+	$$self = $session;
+    }
+    sub get_session {
+	my $self = shift;
+	return $$self
+    }
+    sub DESTROY {
+	my $self = shift;
+	Net::SSLeay::SESSION_free($$self) if $$self;
+    }
 }
 
 1;
