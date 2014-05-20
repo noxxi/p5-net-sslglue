@@ -15,8 +15,7 @@ use IO::Socket::SSL;
 use LWP::Simple;
 
 my $goodhost = 'google.de';
-# this does not work any longer - will be skipped in test
-my $badhost = 'www.fedora.org';
+my $badhost = 'www.digitalmarketer.com';
 
 my $capath = '/etc/ssl/certs/'; # unix?
 -d $capath or do {
@@ -61,6 +60,8 @@ if ( $sock = IO::Socket::INET->new(
     if ( IO::Socket::SSL->start_SSL( $sock,
 	SSL_ca_path => $capath,
 	SSL_verify_mode => 1,
+	SSL_verifycn_scheme => 'http',
+	SSL_verifycn_name => $badhost,
     )) {
 	diag("certificate for  $badhost unexpectly correct");
 	$badhost = undef;
@@ -84,14 +85,14 @@ print $content ? "ok\n": "not ok # lwp connect $goodhost: $@\n";
 if ( $badhost ) {
     # $badhost -> should fail
     diag("connecting to $badhost:443 with LWP");
-    $content = get( 'https://$badhost' );
+    $content = get( "https://$badhost" );
     print $content ? "not ok # lwp ssl connect $badhost should fail\n": "ok\n";
 
     # $badhost -> should succeed if verify mode is 0
     {
 	local %Net::SSLGlue::LWP::SSLopts = %Net::SSLGlue::LWP::SSLopts;
 	$Net::SSLGlue::LWP::SSLopts{SSL_verify_mode} = 0;
-	$content = get( 'https://$badhost' );
+	$content = get( "https://$badhost" );
 	print $content ? "ok\n": "not ok # lwp ssl $badhost w/o ssl verify\n";
     }
 }

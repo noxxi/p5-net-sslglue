@@ -205,10 +205,13 @@ for my $cmd (qw(PBSZ PROT CCC EPRT EPSV)) {
 	}
 
 	if (( ${*$self}{net_ftp_tlstype} || '') eq 'P'
-	    && ! $conn->start_SSL( $self->is_ssl 
-		? ( SSL_reuse_ctx => $self )
-		: ( %{${*$self}{net_ftp_tlsargs}} )
-	    ) ) {
+	    && ! $conn->start_SSL( $self->is_ssl ? ( 
+		    SSL_reuse_ctx => $self, 
+		    SSL_verifycn_name => ${*$self}{net_ftp_tlsargs}->{SSL_verifycn_name} 
+		):( 
+		    %{${*$self}{net_ftp_tlsargs}} 
+		)
+	    )) {
 	    croak("failed to ssl upgrade dataconn: $SSL_ERROR");
 	    return;
 	}

@@ -1,3 +1,8 @@
+1.053 2014/05/28
+- if current LWP is detected is use this mostly unpatched
+- fix Net::SSLGlue::FTP to use the same hostname when verifying the
+  certificate of the data connection
+
 1.052 2014/01/16
 - FTPS: reuse same SSL session for control and data channnel to work
   with default configuration of proftpd. 
