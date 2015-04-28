@@ -12,16 +12,16 @@ our %SSLopts;
 # Net::LDAP::_SSL_context_init_args
 
 my $old = defined &Net::LDAP::_SSL_context_init_args
-	&& \&Net::LDAP::_SSL_context_init_args
-	|| die "cannot find Net::LDAP::_SSL_context_init_args";
+    && \&Net::LDAP::_SSL_context_init_args
+    || die "cannot find Net::LDAP::_SSL_context_init_args";
 no warnings 'redefine';
 *Net::LDAP::_SSL_context_init_args = sub {
-	my %arg = $old->(@_);
-	$arg{SSL_verifycn_scheme} ||= 'ldap' if $arg{SSL_verify_mode};
-	while ( my ($k,$v) = each %SSLopts ) {
-		$arg{$k} = $v;
-	}
-	return %arg;
+    my %arg = $old->(@_);
+    $arg{SSL_verifycn_scheme} ||= 'ldap' if $arg{SSL_verify_mode};
+    while ( my ($k,$v) = each %SSLopts ) {
+	$arg{$k} = $v;
+    }
+    return %arg;
 };
 
 1;
@@ -32,10 +32,10 @@ Net::SSLGlue::LDAP - proper certificate checking for ldaps in Net::LDAP
 
 =head1 SYNOPSIS
 
-  	use Net::SSLGlue::LDAP;
-	local %Net::SSLGlue::LDAP = ( SSL_verifycn_name => $hostname_in_cert );
-	my $ldap = Net::LDAP->new( $hostname, capath => ... );
-	$ldap->start_tls;
+    use Net::SSLGlue::LDAP;
+    local %Net::SSLGlue::LDAP = ( SSL_verifycn_name => $hostname_in_cert );
+    my $ldap = Net::LDAP->new( $hostname, capath => ... );
+    $ldap->start_tls;
 
 
 =head1 DESCRIPTION

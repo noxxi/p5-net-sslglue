@@ -15,7 +15,7 @@ use IO::Socket::SSL;
 use LWP::Simple;
 
 my $goodhost = 'google.de';
-my $badhost = 'www.digitalmarketer.com';
+my $badhost = 'badcert.maulwuff.de';
 
 my $capath = '/etc/ssl/certs/'; # unix?
 -d $capath or do {

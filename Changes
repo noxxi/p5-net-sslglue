@@ -1,3 +1,7 @@
+1.054 2015/04/28
+- if a version of libnet is detected which already supports TLS (i.e.
+  libnet 3.0+) warn and use this instead.
+
 1.053 2014/05/28
 - if current LWP is detected is use this mostly unpatched
 - fix Net::SSLGlue::FTP to use the same hostname when verifying the

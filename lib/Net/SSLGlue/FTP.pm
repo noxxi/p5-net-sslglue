@@ -8,11 +8,20 @@ use IO::Socket::SSL '$SSL_ERROR';
 use Net::SSLGlue::Socket;
 use Socket 'AF_INET';
 
-our $VERSION = 1.001;
+our $VERSION = 1.002;
 
 BEGIN {
+    require Net::FTP;
+    if (defined &Net::FTP::starttls) {
+	warn "using SSL support of Net::FTP $Net::FTP::VERSION instead of SSLGlue";
+	goto DONE;
+    }
+
+    $Net::FTP::VERSION eq '2.77'
+	or warn "Not tested with Net::FTP version $Net::FTP::VERSION";
+
+    require Net::FTP::dataconn;
     for my $class (qw(Net::FTP Net::FTP::dataconn)) {
-	eval "require $class" or die "failed to load $class";
 	no strict 'refs';
 	my $fixed;
 	for( @{ "${class}::ISA" } ) {
@@ -24,13 +33,9 @@ BEGIN {
 	die "cannot replace IO::Socket::INET with Net::SSLGlue::Socket in ${class}::ISA"
 	    if ! $fixed;
     }
-    $Net::FTP::VERSION eq '2.77'
-	or warn "Not tested with Net::FTP version $Net::FTP::VERSION";
-}
 
-# redefine Net::FTP::new so that it understands SSL => 1 and connects directly
-# with SSL to the server
-{
+    # redefine Net::FTP::new so that it understands SSL => 1 and connects directly
+    # with SSL to the server
     no warnings 'redefine';
     my $onew = Net::FTP->can('new');
     *Net::FTP::new = sub {
@@ -53,68 +58,65 @@ BEGIN {
 	${*$self}{net_ftp_tlsargs} = \%sslargs;
 	return $self;
     };
-}
 
-# add starttls method to upgrade connection to SSL: AUTH TLS
-sub Net::FTP::starttls {
-    my $self = shift;
-    $self->is_ssl and croak("called starttls within SSL session");
-    $self->_AUTH('TLS') == Net::FTP::CMD_OK or return;
+    # add starttls method to upgrade connection to SSL: AUTH TLS
+    *Net::FTP::starttls = sub {
+	my $self = shift;
+	$self->is_ssl and croak("called starttls within SSL session");
+	$self->_AUTH('TLS') == &Net::FTP::CMD_OK or return;
 
-    my $host = $self->host;
-    # for name verification strip port from domain:port, ipv4:port, [ipv6]:port
-    $host =~s{(?<!:):\d+$}{};
+	my $host = $self->host;
+	# for name verification strip port from domain:port, ipv4:port, [ipv6]:port
+	$host =~s{(?<!:):\d+$}{};
 
-    my %args = (
-	SSL_verify_mode => 1,
-	SSL_verifycn_scheme => 'ftp',
-	SSL_verifycn_name => $host,
-	# reuse SSL session of control connection in data connections
-	SSL_session_cache => Net::SSLGlue::FTP::SingleSessionCache->new,
-	%{ ${*$self}{net_ftp_tlsargs}},
-	@_
-    );
+	my %args = (
+	    SSL_verify_mode => 1,
+	    SSL_verifycn_scheme => 'ftp',
+	    SSL_verifycn_name => $host,
+	    # reuse SSL session of control connection in data connections
+	    SSL_session_cache => Net::SSLGlue::FTP::SingleSessionCache->new,
+	    %{ ${*$self}{net_ftp_tlsargs}},
+	    @_
+	);
 
-    $self->start_SSL(%args) or return;
-    ${*$self}{net_ftp_tlsargs} = \%args;
-    $self->prot('P');
-    return 1;
-}
+	$self->start_SSL(%args) or return;
+	${*$self}{net_ftp_tlsargs} = \%args;
+	$self->prot('P');
+	return 1;
+    };
 
-# add prot method to set protection level (PROT C|P)
-sub Net::FTP::prot {
-    my ($self,$type) = @_;
-    $type eq 'C' or $type eq 'P' or croak("type must by C or P");
-    $self->_PBSZ(0) or return;
-    $self->_PROT($type) or return;
-    ${*$self}{net_ftp_tlstype} = $type;
-    return 1;
-}
+    # add prot method to set protection level (PROT C|P)
+    *Net::FTP::prot = sub {
+	my ($self,$type) = @_;
+	$type eq 'C' or $type eq 'P' or croak("type must by C or P");
+	$self->_PBSZ(0) or return;
+	$self->_PROT($type) or return;
+	${*$self}{net_ftp_tlstype} = $type;
+	return 1;
+    };
 
-# add stoptls method to downgrade connection from SSL: CCC
-sub Net::FTP::stoptls {
-    my $self = shift;
-    $self->is_ssl or croak("called stoptls outside SSL session");
-    $self->_CCC() or return;
-    $self->stop_SSL();
-    return 1;
-}
+    # add stoptls method to downgrade connection from SSL: CCC
+    *Net::FTP::stoptls = sub {
+	my $self = shift;
+	$self->is_ssl or croak("called stoptls outside SSL session");
+	$self->_CCC() or return;
+	$self->stop_SSL();
+	return 1;
+    };
 
-# add EPSV for new style passive mode (incl. IPv6)
-sub Net::FTP::epsv {
-    my $self = shift;
-    @_ and croak 'usage: $ftp->epsv()';
-    delete ${*$self}{net_ftp_intern_port};
+    # add EPSV for new style passive mode (incl. IPv6)
+    *Net::FTP::epsv = sub {
+	my $self = shift;
+	@_ and croak 'usage: $ftp->epsv()';
+	delete ${*$self}{net_ftp_intern_port};
 
-    $self->_EPSV && $self->message =~ m{\(([\x33-\x7e])\1\1(\d+)\1\)}
-	? ${*$self}{'net_ftp_pasv'} = [ $self->peerhost, $2 ]
-	: undef;
-}
+	$self->_EPSV && $self->message =~ m{\(([\x33-\x7e])\1\1(\d+)\1\)}
+	    ? ${*$self}{'net_ftp_pasv'} = [ $self->peerhost, $2 ]
+	    : undef;
+    };
 
-# redefine PASV so that it uses EPSV on IPv6
-# also net_ftp_pasv contains now the parsed [ip,port]
-{
-    no warnings 'redefine';
+    # redefine PASV so that it uses EPSV on IPv6
+    # also net_ftp_pasv contains now the parsed [ip,port]
     *Net::FTP::pasv = sub {
 	my $self = shift;
 	@_ and croak 'usage: $ftp->port()';
@@ -129,62 +131,56 @@ sub Net::FTP::epsv {
 	}
 	return;
     };
-}
 
-# add EPRT for new style passive mode (incl. IPv6)
-sub Net::FTP::eprt {
-    @_ == 1 || @_ == 2 or croak 'usage: $self->eprt([PORT])';
-    return _eprt('EPRT',@_);
-}
+    # add EPRT for new style passive mode (incl. IPv6)
+    *Net::FTP::eprt = sub {
+	@_ == 1 || @_ == 2 or croak 'usage: $self->eprt([PORT])';
+	return _eprt('EPRT',@_);
+    };
 
-# redefine PORT to use EPRT for IPv6
-{
-    no warnings 'redefine';
+    # redefine PORT to use EPRT for IPv6
     *Net::FTP::port = sub {
 	@_ == 1 || @_ == 2 or croak 'usage: $self->port([PORT])';
 	return _eprt('PORT',@_);
     };
-}
 
-sub _eprt {
-    my ($cmd,$self,$port) = @_;
-    delete ${*$self}{net_ftp_intern_port};
-    unless ($port) {
-	my $listen = ${*$self}{net_ftp_listen} ||= Net::SSLGlue::Socket->new(
-	    Listen    => 1,
-	    Timeout   => $self->timeout,
-	    LocalAddr => $self->sockhost,
-	);
-	${*$self}{net_ftp_intern_port} = 1;
-	my $fam = ($listen->sockdomain == AF_INET) ? 1:2;
-	if ( $cmd eq 'EPRT' || $fam == 2 ) {
-	    $port = "|$fam|".$listen->sockhost."|".$listen->sockport."|";
-	    $cmd = 'EPRT';
-	} else {
-	    my $p = $listen->sockport;
-	    $port = join(',',split(m{\.},$listen->sockhost),$p >> 8,$p & 0xff);
+    sub _eprt {
+	my ($cmd,$self,$port) = @_;
+	delete ${*$self}{net_ftp_intern_port};
+	unless ($port) {
+	    my $listen = ${*$self}{net_ftp_listen} ||= Net::SSLGlue::Socket->new(
+		Listen    => 1,
+		Timeout   => $self->timeout,
+		LocalAddr => $self->sockhost,
+	    );
+	    ${*$self}{net_ftp_intern_port} = 1;
+	    my $fam = ($listen->sockdomain == AF_INET) ? 1:2;
+	    if ( $cmd eq 'EPRT' || $fam == 2 ) {
+		$port = "|$fam|".$listen->sockhost."|".$listen->sockport."|";
+		$cmd = 'EPRT';
+	    } else {
+		my $p = $listen->sockport;
+		$port = join(',',split(m{\.},$listen->sockhost),$p >> 8,$p & 0xff);
+	    }
+	}
+	my $ok = $cmd eq 'EPRT' ? $self->_EPRT($port) : $self->_PORT($port);
+	${*$self}{net_ftp_port} = $port if $ok;
+	return $ok;
+    }
+
+
+
+    for my $cmd (qw(PBSZ PROT CCC EPRT EPSV)) {
+	no strict 'refs';
+	*{"Net::FTP::_$cmd"} = sub {
+	    shift->command("$cmd @_")->response() == &Net::FTP::CMD_OK
 	}
     }
-    my $ok = $cmd eq 'EPRT' ? $self->_EPRT($port) : $self->_PORT($port);
-    ${*$self}{net_ftp_port} = $port if $ok;
-    return $ok;
-}
 
 
-
-for my $cmd (qw(PBSZ PROT CCC EPRT EPSV)) {
-    no strict 'refs';
-    *{"Net::FTP::_$cmd"} = sub {
-	shift->command("$cmd @_")->response() == Net::FTP::CMD_OK
-    }
-}
-
-# redefine _dataconn to
-# - support IPv6
-# - upgrade data connection to SSL if PROT P
-{
-
-    no warnings 'redefine';
+    # redefine _dataconn to
+    # - support IPv6
+    # - upgrade data connection to SSL if PROT P
     *Net::FTP::_dataconn = sub {
 	my $self = shift;
 	my $pkg = "Net::FTP::" . $self->type;
@@ -223,6 +219,9 @@ for my $cmd (qw(PBSZ PROT CCC EPRT EPSV)) {
 	${*$conn}{net_ftp_blksize} = ${*$self}{net_ftp_blksize};
 	return $conn;
     };
+
+    DONE:
+    1;
 }
 
 {
@@ -291,8 +290,7 @@ of L<IO::Socket::SSL> to C<Net::FTP::new>.
 =item starttls
 
 If the connection is not yet SSLified it will issue the "AUTH TLS" command and
-change the object, so that SSL will now be used. The usual C<SSL_*> parameter of
-L<IO::Socket::SSL> will be given.
+change the object, so that SSL will now be used.
 
 =item peer_certificate ...
 

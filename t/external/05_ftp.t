@@ -67,9 +67,9 @@ $ftp->prot('C');
 ok(~~$ftp->ls,"directory listing clear");
 
 # then TLS upgrade inside plain connection
-$ftp = Net::FTP->new($server, Passive => 1, Debug => $debug);
+$ftp = Net::FTP->new($server, Passive => 1, Debug => $debug, %sslargs);
 ok($ftp,"ftp plain connect $server");
-my $ok = $ftp->starttls(%sslargs);
+my $ok = $ftp->starttls();
 ok($ok,"ssl upgrade");
 $ftp->login("anonymous",'net-sslglue-ftp@test.perl')
     or die "login to $server failed";

@@ -27,11 +27,11 @@ BEGIN {
 	require Net::HTTPS;
 
 	if ( ( my $oc = $Net::HTTPS::SSL_SOCKET_CLASS ) ne $need ) {
-		# was probably loaded before, change ISA
-		grep { s{^\Q$oc\E$}{$need} } @Net::HTTPS::ISA
+	    # was probably loaded before, change ISA
+	    grep { s{^\Q$oc\E$}{$need} } @Net::HTTPS::ISA
 	}
 	die "cannot force $need into Net::HTTPS"
-		if $Net::HTTPS::SSL_SOCKET_CLASS ne $need;
+	    if $Net::HTTPS::SSL_SOCKET_CLASS ne $need;
     }
 }
 
