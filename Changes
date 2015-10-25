@@ -1,3 +1,7 @@
+1.055 2015/10/25
+- fix memory leak in Net::SSLGlue::Socket, RT#107816.
+  Thanks to kasyap.mr[AT]gmail[DOT]com  for reporting
+
 1.054 2015/04/28
 - if a version of libnet is detected which already supports TLS (i.e.
   libnet 3.0+) warn and use this instead.

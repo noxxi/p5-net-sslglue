@@ -1,6 +1,6 @@
 
 package Net::SSLGlue::Socket;
-our $VERSION = 1.001;
+our $VERSION = 1.002;
 
 use strict;
 use warnings;
@@ -35,11 +35,11 @@ sub new {
 	or return;
 
     my $self = gensym();
-    *$self = *$sock;  # clone handle
     bless $self,$class;
     ${*$self}{sock}    = $sock;
     ${*$self}{ssl}     = $ssl;
     ${*$self}{sslargs} = \%sslargs;
+    tie *{$self}, "Net::SSLGlue::Socket::HANDLE", $self;
 
     return $self;
 }
@@ -114,6 +114,33 @@ sub is_ssl {
     return ${*$self}{ssl} && ${*$self}{sock};
 }
 
+package Net::SSLGlue::Socket::HANDLE;
+use strict;
+use Errno 'EBADF';
+use Scalar::Util 'weaken';
+
+sub TIEHANDLE {
+    my ($class, $handle) = @_;
+    weaken($handle);
+    bless \$handle, $class;
+}
+
+sub READ     { ${shift()}->sysread(@_) }
+sub READLINE { ${shift()}->readline(@_) }
+sub GETC     { ${shift()}->getc(@_) }
+sub PRINT    { ${shift()}->print(@_) }
+sub PRINTF   { ${shift()}->printf(@_) }
+sub WRITE    { ${shift()}->syswrite(@_) }
+sub FILENO   { ${shift()}->fileno(@_) }
+sub TELL     { $! = EBADF; return -1 }
+sub BINMODE  { return 0 }  # not perfect, but better than not implementing the method
+sub CLOSE {                          #<---- Do not change this function!
+    my $ssl = ${$_[0]};
+    local @_;
+    $ssl->close();
+}
+
+
 1;
 
 =head1 NAME
@@ -138,7 +165,11 @@ Net::SSLGlue::Socket - socket which can be either SSL or plain IP (IPv4/IPv6)
     $plain->stop_SSL
 
 
-=head1 DESCRIPTION
+=head1 DESCRIPTIONA
+
+First, it is recommended to use L<IO::Socket::SSL> directly instead of this
+module, since this kind of functionality is available in IO::Socket::SSL since
+version 1.994.
 
 L<Net::SSLGlue::Socket> implements a socket which can be either plain or SSL.
 If IO::Socket::IP or IO::Socket::INET6 are installed it will also transparently
@@ -198,7 +229,7 @@ IO::Socket::SSL
 
 =head1 COPYRIGHT
 
-This module is copyright (c) 2013, Steffen Ullrich.
+This module is copyright (c) 2013..2015, Steffen Ullrich.
 All Rights Reserved.
 This module is free software. It may be used, redistributed and/or modified
 under the same terms as Perl itself.
