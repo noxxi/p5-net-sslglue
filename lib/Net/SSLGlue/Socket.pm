@@ -165,7 +165,7 @@ Net::SSLGlue::Socket - socket which can be either SSL or plain IP (IPv4/IPv6)
     $plain->stop_SSL
 
 
-=head1 DESCRIPTIONA
+=head1 DESCRIPTION
 
 First, it is recommended to use L<IO::Socket::SSL> directly instead of this
 module, since this kind of functionality is available in IO::Socket::SSL since
