@@ -1,3 +1,8 @@
+1.056 2015/10/31
+- fix another memory leak which happened on data connections only
+- make sure that context reuse is done properly, see
+  https://github.com/noxxi/p5-net-sslglue/pull/3
+
 1.055 2015/10/25
 - fix memory leak in Net::SSLGlue::Socket, RT#107816.
   Thanks to kasyap.mr[AT]gmail[DOT]com  for reporting

@@ -44,6 +44,11 @@ sub new {
     return $self;
 }
 
+sub DESTROY {
+    my $self = shift;
+    %{*$self} = ();
+}
+
 for my $sub (qw(
     fileno sysread syswrite close connect fcntl
     read write readline print printf getc say eof getline getlines
@@ -81,10 +86,16 @@ sub accept {
 };
 
 sub start_SSL {
-    my $self = shift;
+    my ($self,%args) = @_;
     croak("start_SSL called on SSL socket") if ${*$self}{ssl};
-    IO::Socket::SSL->start_SSL(${*$self}{sock},%{${*$self}{sslargs}},@_)
-	or return;
+
+    %args = (%{${*$self}{sslargs}},%args);
+    if (my $ctx = $args{SSL_reuse_ctx}) {
+	# take the context from the attached socket
+	$args{SSL_reuse_ctx} = ${*$ctx}{sock}
+	    if $ctx->isa('Net::SSLGlue::Socket');
+    }
+    IO::Socket::SSL->start_SSL(${*$self}{sock},%args) or return;
     ${*$self}{ssl} = 1;
     return $self;
 }
