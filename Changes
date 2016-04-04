@@ -1,3 +1,8 @@
+1.057 2016/04/04
+- removed warning with very old versions of LWP where
+  LWP::Protocol::https::VERSION was not defined yet.
+  Thanks to denis[AT]fateyev[DOT]com for reporting
+
 1.056 2015/10/31
 - fix another memory leak which happened on data connections only
 - make sure that context reuse is done properly, see

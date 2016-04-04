@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 package Net::SSLGlue::LWP;
-our $VERSION = 0.5;
+our $VERSION = 0.501;
 use LWP::UserAgent '5.822';
 use IO::Socket::SSL 1.19;
 use URI;
@@ -11,7 +11,8 @@ use URI;
 my $use_existent;
 BEGIN {
     require LWP::Protocol::https;
-    $use_existent = $LWP::Protocol::https::VERSION >= 6.06
+    $use_existent = $LWP::Protocol::https::VERSION
+	&& $LWP::Protocol::https::VERSION >= 6.06
 	&& $LWP::UserAgent::VERSION >= 6.06;
     if ($use_existent) {
 	my $oc = $Net::HTTPS::SSL_SOCKET_CLASS ||

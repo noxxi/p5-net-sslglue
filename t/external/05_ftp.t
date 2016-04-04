@@ -18,12 +18,16 @@ use Net::SSLGlue::FTP;
 use IO::Socket::SSL;
 use File::Temp;
 
-# first try to connect w/o ftp
-# plain
-diag( "connect inet to $server:21" );
-IO::Socket::INET->new( "$server:21" ) or do {
-    plan skip_all => "$server:21 not reachable";
-};
+# check if we can connect and log in at all (plain)
+diag( "connect ftp w/o ssl to $server" );
+my $ftp;
+if ( $ftp = Net::FTP->new($server, Debug => $debug)
+    and $ftp->login("anonymous",'net-sslglue-ftp@test.perl')) {
+    diag( "connect ftp w/o ssl to $server works" );
+} else {
+    plan skip_all => "no connect/login w/o ssl possible";
+}
+
 
 # ssl to the right host
 diag( "connect inet to $server:990" );
@@ -51,7 +55,7 @@ plan tests => 9;
 
 # first direct SSL
 diag( "connect ftp over ssl to $server" );
-my $ftp = Net::FTP->new($server,
+$ftp = Net::FTP->new($server,
     SSL => 1,
     %sslargs,
     Debug => $debug,

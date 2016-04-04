@@ -1,5 +1,5 @@
 package Net::SSLGlue;
-our $VERSION = '1.056';
+our $VERSION = '1.057';
 
 =head1 NAME
 
