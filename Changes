@@ -1,3 +1,6 @@
+1.058 2016/06/17
+- RT#109887 - fix t/01_load.t in case only very old version of LWP was
+  installed which did not have LWP::Protocol::https
 1.057 2016/04/04
 - removed warning with very old versions of LWP where
   LWP::Protocol::https::VERSION was not defined yet.
