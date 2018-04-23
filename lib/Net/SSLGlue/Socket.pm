@@ -204,7 +204,7 @@ extended:
 =item new
 
 The method C<new> of L<Net::SSLGlue::Socket> can have the argument SSL. If this
-is true the SSL upgrade will be done immediatly. If not set any SSL_* args will
+is true the SSL upgrade will be done immediately. If not set any SSL_* args will
 still be saved and used at a later start_SSL call.
 
 =item start_SSL
@@ -229,7 +229,7 @@ C<select> to check the socket, but for SSL it will check if there are any
 pending data before trying a select.
 Because SSL needs to read the whole frame before decryption can be done, a
 successful return of can_read is no guarantee that data can be read
-immediatly, only that new data are either available or in the process of
+immediately, only that new data are either available or in the process of
 arriving.
 
 =back
