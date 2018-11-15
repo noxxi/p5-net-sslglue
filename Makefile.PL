@@ -7,6 +7,7 @@ my $xt = prompt( "Should I do external tests?\n".
 WriteMakefile(
     NAME => 'Net::SSLGlue',
     VERSION_FROM => 'lib/Net/SSLGlue.pm',
+    LICENSE => 'perl_5',
     PREREQ_PM => {
 	'IO::Socket::SSL' => 1.19,
     },
