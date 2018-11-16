@@ -161,7 +161,7 @@ if (!$use_existent) {
 Net::SSLGlue::LWP - proper certificate checking for https in LWP
 
 =head1 SYNOPSIS
-u
+
     use Net::SSLGlue::LWP SSL_ca_path => ...;
     use LWP::Simple;
     get( 'https://www....' );
